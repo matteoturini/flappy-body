@@ -4,29 +4,33 @@ const appWidth = 640
 const appHeight = 360
 
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
-
 let app = new PIXI.Application({ width: appWidth, height: appHeight });
 document.body.appendChild(app.view as HTMLCanvasElement);
 
 let bird = PIXI.Sprite.from("sprites/bird.png");
 bird.width = 17 * 3
 bird.height = 12 * 3
-
 app.stage.addChild(bird);
-bird.x = appWidth * 0.25
-bird.y = appHeight * 0.25
+
+// Starting settings
+let birdStartx = appWidth * 0.25
+let birdStarty = appHeight * 0.25
+const flapMultiplier = 1.25
+
+bird.x = birdStartx
+bird.y = birdStarty
 
 let elapsed = 0.0;
 let momentum = 0.0;
+let reset = false
+let lastFlap = 0
 
 const spacebar = keyboard(" ")
 spacebar.press = () => {
-  momentum = 1
+  momentum = flapMultiplier
 }
 
 let pillars: PIXI.Sprite[] = []
-
-let reset = false
 
 let lastPillarCreated = 0
 let pillarCreationDelay = 3
@@ -36,32 +40,57 @@ app.ticker.add((delta) => {
   elapsed += delta;
   let elapsedSecs = elapsed / 50
 
-  //Creates new pillars 
-  if (elapsedSecs - lastPillarCreated > pillarCreationDelay) {
-    createPillars()
-    lastPillarCreated = elapsedSecs
+  if (reset){
+    bird.x, bird.y = birdStartx, appHeight * 0.25
+    bird.rotation = 0
+    elapsed = 0
+    for (const pillar of pillars){
+      pillar.destroy()
+    }
+    pillars = []
+    lastPillarCreated = 0
+    reset = false
   }
-
-  for (let i = 0; i < pillars.length; i++) {
-    if (pillars[i] != null) {
+  else if (elapsedSecs > 2){  // Creates new pillars 
+    if (elapsedSecs - lastPillarCreated > pillarCreationDelay) {
+      createPillars()
+      lastPillarCreated = elapsedSecs
+    }
+    
+    // Moves pillars
+    for (let i = 0; i < pillars.length; i++) {
       pillars[i].x -= 1.5 * delta
-
       if (pillars[i].x < -200) {
         pillars[i].destroy()
         pillars.splice(i, 1)
       }
     }
-  }
-  momentum -= 0.05 * delta;
-  bird.y -= momentum;
-  bird.rotation = -(momentum / 5)
 
-  //Checks borders
-  if (bird.y < -30 && !reset || bird.y > appHeight && !reset) {
-    window.location.reload();
-    reset = true
+    // Applies flaps
+    if (window.playerFlaps > lastFlap){
+      momentum = window.playerFlapSpeed * flapMultiplier
+      lastFlap = window.playerFlaps
+    }
+    
+    // Moves bird
+    momentum -= 0.05 * delta;
+    bird.y -= momentum;
+    bird.rotation = -(momentum / 5)
+  
+    // Kills bird if outside borders
+    if (bird.y < -30 && !reset || bird.y > appHeight && !reset) {
+      reset = true
+    }
+    // Kills bird when touching pillars
+    for (let i = 0; i < pillars.length; i++){
+      if (colliding(bird, pillars[i])){
+        reset = true
+      }
+    }
   }
-
+  else{
+    momentum = 0
+  }
 });
 
 interface Key {
@@ -122,6 +151,8 @@ function createPillars() {
   let passageSize = 125
   let middleY = 100 + (Math.random() * (appHeight - 200))
 
+  console.log("Pillars created")
+
   //Top pillar creation
   let newPillarTop = PIXI.Sprite.from("sprites/pillar.png")
   newPillarTop.width = 32 * size
@@ -140,30 +171,12 @@ function createPillars() {
   app.stage.addChild(newPillarTop)
   app.stage.addChild(newPillarBottom);
 
-  for (let i = 0; i < pillars.length; i++) {
-    if (pillars[i] == null) {
-      pillars[i] = newPillarTop
-      break;
-    }
-  }
-  for (let i = 0; i < pillars.length; i++) {
-    if (pillars[i] == null) {
-      pillars[i] = newPillarBottom
-      break;
-    }
-  }
+  pillars.push(newPillarTop)
+  pillars.push(newPillarBottom)
 }
 function colliding(a: PIXI.Sprite, b: PIXI.Sprite) {
-  //Creates the collision box for a
-  let a1x = a.x
-  let a1y = a.y
-  let a2x = a.x + a.width
-  let a2y = a.y + a.height
-
-  //Creates the collision box for b
-  let b1x = b.x
-  let b1y = b.y
-  let b2x = b.x + b.width
-  let b2y = b.y + b.height
-
+  return a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
 }
