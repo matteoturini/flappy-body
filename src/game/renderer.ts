@@ -15,7 +15,7 @@ app.stage.addChild(bird);
 // Starting settings
 let birdStartx = appWidth * 0.25
 let birdStarty = appHeight * 0.25
-const flapMultiplier = 1.25
+const flapMultiplier = 6
 
 bird.x = birdStartx
 bird.y = birdStarty
@@ -27,7 +27,7 @@ let lastFlap = 0
 
 const spacebar = keyboard(" ")
 spacebar.press = () => {
-  momentum = flapMultiplier
+  momentum = 1.25
 }
 
 let pillars: PIXI.Sprite[] = []
