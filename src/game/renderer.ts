@@ -27,7 +27,7 @@ let lastFlap = 0
 
 const spacebar = keyboard(" ")
 spacebar.press = () => {
-  momentum = 1.25
+  momentum = 2
 }
 
 let pillars: PIXI.Sprite[] = []
@@ -78,8 +78,13 @@ app.ticker.add((delta) => {
     bird.rotation = -(momentum / 5)
   
     // Kills bird if outside borders
-    if (bird.y < -30 && !reset) {
+    if (bird.y > appHeight && !reset) {
       reset = true
+    }
+    for (const pillar of pillars){
+      if ((bird.x + bird.width > pillar.x && bird.x < pillar.x + pillar.width) && !reset){
+        reset = true
+      }
     }
     // Kills bird when touching pillars
     for (let i = 0; i < pillars.length; i++){
