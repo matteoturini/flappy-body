@@ -3,8 +3,14 @@ import { NormalizedLandmark, Pose, POSE_CONNECTIONS, POSE_LANDMARKS, Results } f
 import { Camera } from '@mediapipe/camera_utils'
 
 declare global {
-  interface Window { playerFlaps: number; }
+  interface Window {
+    playerFlaps: number;
+    playerFlapSpeed: number;
+  }
 }
+
+window.playerFlapSpeed = 0;
+window.playerFlaps = 0;
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/ `
   <video class="input_video"></video>
@@ -16,8 +22,8 @@ const videoElement: HTMLVideoElement = document.querySelector('video')!;
 const canvasElement: HTMLCanvasElement = document.querySelector('canvas.output_canvas')!;
 const canvasCtx = canvasElement.getContext('2d')!;
 
-let wentDown = false;
-let wentUp = false;
+let wentDown = 0;
+let wentUp = 0;
 
 let opened_distance = .6;
 let closed_distance = .4;
@@ -71,17 +77,19 @@ function onResults(results: Results) {
   canvasCtx.fillText("Left: " + dist_left.toFixed(2), 10, 50);
   canvasCtx.fillText("Right: " + dist_right.toFixed(2), 10, 100);
   canvasCtx.fillText("Flap: " + window.playerFlaps, 10, 150);
+  canvasCtx.fillText("Flap Speed: " + window.playerFlapSpeed.toFixed(2), 10, 200);
 
   if (dist_left > opened_distance && dist_right > opened_distance) {
-    wentUp = true;
-  } else if (dist_left < closed_distance && dist_right < closed_distance && wentUp) {
-    wentDown = true;
+    wentUp = Date.now();
+  } else if (dist_left < closed_distance && dist_right < closed_distance && wentUp != 0) {
+    wentDown = Date.now();
   }
 
   if (wentUp && wentDown) {
     window.playerFlaps++;
-    wentUp = false;
-    wentDown = false;
+    window.playerFlapSpeed = (wentDown - wentUp) / 1000;
+    wentUp = 0;
+    wentDown = 0;
   }
 }
 
