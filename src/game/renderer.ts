@@ -68,7 +68,7 @@ app.ticker.add((delta) => {
 
     // Applies flaps
     if (window.playerFlaps > lastFlap){
-      momentum = window.playerFlapSpeed * flapMultiplier
+      momentum = (1 / window.playerFlapSpeed) * flapMultiplier
       lastFlap = window.playerFlaps
     }
     
@@ -78,7 +78,7 @@ app.ticker.add((delta) => {
     bird.rotation = -(momentum / 5)
   
     // Kills bird if outside borders
-    if (bird.y < -30 && !reset || bird.y > appHeight && !reset) {
+    if (bird.y > appHeight && !reset) {
       reset = true
     }
     // Kills bird when touching pillars
