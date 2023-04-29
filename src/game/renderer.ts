@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-const appWidth = 640
+const appWidth = 1240
 const appHeight = 360
 
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -19,10 +19,11 @@ const flapMultiplier = 6
 
 bird.x = birdStartx
 bird.y = birdStarty
+bird.zIndex = 5
 
 let elapsed = 0.0;
 let momentum = 0.0;
-let reset = false
+let reset = true
 let lastFlap = 0
 
 const spacebar = keyboard(" ")
@@ -31,6 +32,7 @@ spacebar.press = () => {
 }
 
 let pillars: PIXI.Sprite[] = []
+let background: PIXI.Sprite[] = []
 
 let lastPillarCreated = 0
 let pillarCreationDelay = 6
@@ -48,8 +50,27 @@ app.ticker.add((delta) => {
       pillar.destroy()
     }
     pillars = []
+    for (const tile of background){
+      tile.destroy()
+    }
+    background = []
     lastPillarCreated = 0
     reset = false
+    
+    for (let i = 0; i < 10; i++){
+      let tile = PIXI.Sprite.from("Background/Background1.png")
+      tile.width = tile.width * 1.41
+      tile.height = tile.height * 1.41
+      if (i == 0){
+        console.log("Created tile")
+        tile.x = -500
+      }
+      else{
+        tile.x = background[background.length - 1].x + tile.width
+      }
+      app.stage.addChild(tile)
+      background.push(tile)
+    }
   }
   else if (elapsedSecs > 2){  // Creates new pillars 
     if (elapsedSecs - lastPillarCreated > pillarCreationDelay) {
@@ -76,8 +97,8 @@ app.ticker.add((delta) => {
     momentum -= 0.05 * delta;
     bird.y -= momentum;
     bird.rotation = -(momentum / 5)
-  
-    // Kills bird if outside borders
+
+        // Kills bird if outside borders
     if (bird.y > appHeight && !reset) {
       reset = true
     }
@@ -92,6 +113,27 @@ app.ticker.add((delta) => {
         reset = true
       }
     }
+
+    // Background
+    for (let i = 0; i < background.length; i++) {
+      background[i].x -= 0.5 * delta
+      if (background[i].x < -400) {
+        background[i].destroy()
+        background.splice(i, 1)
+      }
+    }
+    if (background[background.length - 1].x < appWidth + 100){
+      let tile = PIXI.Sprite.from("Background/Background1.png")
+      tile.width = tile.width * 1.41
+      tile.height = tile.height * 1.41
+      tile.x = background[background.length - 1].x + tile.width
+      app.stage.addChild(tile)
+      background.push(tile)
+      console.log("Created background")
+    }
+
+    // Sorts all sprites
+    app.stage.sortChildren()
   }
   else{
     momentum = 0
@@ -153,10 +195,8 @@ function keyboard(value: string): Key {
 
 function createPillars() {
   let size = 3
-  let passageSize = 125
+  let passageSize = 200
   let middleY = 100 + (Math.random() * (appHeight - 200))
-
-  console.log("Pillars created")
 
   //Top pillar creation
   let newPillarTop = PIXI.Sprite.from("sprites/pillar.png")
