@@ -33,7 +33,7 @@ spacebar.press = () => {
 let pillars: PIXI.Sprite[] = []
 
 let lastPillarCreated = 0
-let pillarCreationDelay = 3
+let pillarCreationDelay = 6
 // Tell our application's ticker to run a new callback every frame, passing
 // in the amount of time that has passed since the last tick
 app.ticker.add((delta) => {
@@ -82,7 +82,7 @@ app.ticker.add((delta) => {
       reset = true
     }
     for (const pillar of pillars){
-      if ((bird.x + bird.width > pillar.x && bird.x < pillar.x + pillar.width) && !reset){
+      if ((bird.x + bird.width > pillar.x && bird.x < pillar.x + pillar.width) && !reset && bird.y < -30){
         reset = true
       }
     }
