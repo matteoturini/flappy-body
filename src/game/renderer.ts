@@ -78,7 +78,7 @@ app.ticker.add((delta) => {
     bird.rotation = -(momentum / 5)
   
     // Kills bird if outside borders
-    if (bird.y > appHeight && !reset) {
+    if (bird.y < -30 && !reset) {
       reset = true
     }
     // Kills bird when touching pillars
