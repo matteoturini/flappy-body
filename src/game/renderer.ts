@@ -172,7 +172,7 @@ app.ticker.add((delta) => {
   // Boosts first flap
   if (boost && window.playerFlaps > 0) {
     boost = false
-    momentum = flapMultiplier / 2
+    momentum = flapMultiplier / 3
     window.playerFlaps = 1
     lastFlap = 1
   }
