@@ -34,7 +34,7 @@ const spacebar = keyboard(" ")
 spacebar.press = () => {
   momentum = 2
 }
-
+let boost = false
 let pillars: PIXI.Sprite[] = []
 let passedPillars : Array<number> = []
 let background: PIXI.Sprite[] = []
@@ -60,6 +60,8 @@ app.ticker.add((delta) => {
     bird.rotation = 0
     elapsed = 0
     window.playerFlaps = 0
+    console.log("Reset")
+    boost = true
     for (const pillar of pillars){
       pillar.destroy()
     }
@@ -86,7 +88,7 @@ app.ticker.add((delta) => {
       background.push(tile)
     }
   }
-  else if (window.playerFlaps != 0){  // Creates new pillars 
+  else if (window.playerFlaps > 0){  // Creates new pillars 
     if (elapsedSecs - lastPillarCreated > pillarCreationDelay) {
       createPillars()
       lastPillarCreated = elapsedSecs
@@ -120,7 +122,7 @@ app.ticker.add((delta) => {
     bird.y -= momentum;
     bird.rotation = -(momentum / 5)
 
-        // Kills bird if outside borders
+    // Kills bird if outside borders
     if (bird.y > appHeight && !reset) {
       reset = true
     }
@@ -159,6 +161,11 @@ app.ticker.add((delta) => {
   }
   else{
     momentum = 0
+  }
+  if (boost && window.playerFlaps > 0){
+    boost = false
+    momentum = flapMultiplier * 2
+    window.playerFlaps = 1
   }
 });
 
