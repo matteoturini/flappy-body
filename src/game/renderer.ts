@@ -7,7 +7,7 @@ const appHeight = 360
 // Starting settings
 const birdStartx = appWidth * 0.25
 const birdStarty = appHeight * 0.25
-const flapMultiplier = 1.5  
+const flapMultiplier = 10
 
 // Pillar settings
 const size = 3
@@ -37,7 +37,7 @@ bird.zIndex = 100000000000000 // Dont look at this number
 
 // Score text creation
 let scoreText = new PIXI.Text("0")
-scoreText.style = new PIXI.TextStyle({fill:0xFFFFFF})
+scoreText.style = new PIXI.TextStyle({ fill: 0xFFFFFF })
 app.stage.addChild(scoreText)
 scoreText.x = appWidth - 50
 scoreText.y = 0
@@ -54,7 +54,7 @@ let elapsed = 0.0;
 let reset = true
 let curZIndex = 0
 let pillars: PIXI.Sprite[] = []
-let passedPillars : Array<number> = []
+let passedPillars: Array<number> = []
 let background: PIXI.Sprite[] = []
 let lastPillarCreated = 0
 
@@ -64,7 +64,7 @@ app.ticker.add((delta) => {
   let elapsedSecs = elapsed / 50 // Nifty little variable
 
   // Reset game logic
-  if (reset){
+  if (reset) {
     // Reset variables
     bird.x, bird.y = birdStartx, birdStarty
     bird.rotation = 0
@@ -75,15 +75,15 @@ app.ticker.add((delta) => {
     reset = false
 
     // Deletes pillars
-    for (const pillar of pillars){
+    for (const pillar of pillars) {
       pillar.destroy()
     }
     pillars = []
   }
   // Checks if the player has flapped to start the game
-  else if (window.playerFlaps > 0){
+  else if (window.playerFlaps > 0) {
 
-      // Creates new pillars 
+    // Creates new pillars 
     if (elapsedSecs - lastPillarCreated > pillarCreationDelay) {
       createPillars()
       lastPillarCreated = elapsedSecs
@@ -98,8 +98,8 @@ app.ticker.add((delta) => {
     }
 
     // Applies flaps
-    if (window.playerFlaps > lastFlap){
-      momentum = (1 / window.playerFlapSpeed) * flapMultiplier
+    if (window.playerFlaps > lastFlap) {
+      momentum = (window.playerFlapSpeed) * flapMultiplier
       lastFlap = window.playerFlaps
     }
     // Moves bird and rotates it
@@ -110,15 +110,21 @@ app.ticker.add((delta) => {
     if (bird.y > appHeight && !reset) {
       reset = true
     }
+
+    if (bird.y < -1) {
+      bird.y = -1
+      momentum = 0
+    }
+
     // Logic so that the bird can go up
-    for (const pillar of pillars){
-      if ((bird.x + bird.width > pillar.x && bird.x < pillar.x + pillar.width) && !reset && bird.y < -30){
+    for (const pillar of pillars) {
+      if ((bird.x + bird.width > pillar.x && bird.x < pillar.x + pillar.width) && !reset && bird.y < -30) {
         reset = true
       }
     }
     // Kills bird when touching pillars
-    for (let i = 0; i < pillars.length; i++){
-      if (colliding(bird, pillars[i])){
+    for (let i = 0; i < pillars.length; i++) {
+      if (colliding(bird, pillars[i])) {
         reset = true
       }
     }
@@ -132,7 +138,7 @@ app.ticker.add((delta) => {
       }
     }
     // Creates first background tile
-    if (background.length == 0){
+    if (background.length == 0) {
       let tile = PIXI.Sprite.from("Background/Background1.png")
       tile.width = tile.width * 1.41
       tile.height = tile.height * 1.41
@@ -141,7 +147,7 @@ app.ticker.add((delta) => {
       background.push(tile)
     }
     // Deletes background out of range
-    if (background[background.length - 1].x < appWidth + 100){
+    if (background[background.length - 1].x < appWidth + 100) {
       let tile = PIXI.Sprite.from("Background/Background1.png")
       tile.width = tile.width * 1.41
       tile.height = tile.height * 1.41
@@ -151,7 +157,7 @@ app.ticker.add((delta) => {
     }
     // Applies score
     for (let i = 0; i < pillars.length; i++) {
-      if (bird.x > (pillars[i].x + pillars[i].width) && !(passedPillars.includes(pillars[i].zIndex))){
+      if (bird.x > (pillars[i].x + pillars[i].width) && !(passedPillars.includes(pillars[i].zIndex))) {
         passedPillars.push(pillars[i].zIndex)
         score += 5 // Beautiful way of knowing if the pillar is passed BTW
       }
@@ -160,11 +166,11 @@ app.ticker.add((delta) => {
     scoreText.text = score
     app.stage.sortChildren()
   }
-  else{
+  else {
     momentum = 0 // Pauses the game
   }
   // Boosts first flap
-  if (boost && window.playerFlaps > 0){
+  if (boost && window.playerFlaps > 0) {
     boost = false
     momentum = flapMultiplier * 2
     window.playerFlaps = 1

@@ -28,6 +28,8 @@ let wentUp = 0;
 let opened_distance = .6;
 let closed_distance = .4;
 
+let lastDistLeft = 0;
+let lastDistRight = 0;
 
 function distance3d(p1: NormalizedLandmark, p2: NormalizedLandmark) {
   // Distance between two 3d points
@@ -42,8 +44,6 @@ function onResults(results: Results) {
   if (!results.poseLandmarks) {
     return;
   }
-
-
 
   canvasCtx.save();
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -66,10 +66,13 @@ function onResults(results: Results) {
   canvasCtx.restore();
 
   const rl = results.poseWorldLandmarks;
+  const cl = results.poseLandmarks;
   const l = POSE_LANDMARKS;
 
   let dist_left = distance3d(rl[l.LEFT_ELBOW], rl[l.LEFT_HIP]);
   let dist_right = distance3d(rl[l.RIGHT_ELBOW], rl[l.RIGHT_HIP]);
+
+
 
   // Draw
   canvasCtx.font = "30px Arial";
@@ -87,10 +90,35 @@ function onResults(results: Results) {
 
   if (wentUp && wentDown) {
     window.playerFlaps++;
-    window.playerFlapSpeed = (wentDown - wentUp) / 1000;
     wentUp = 0;
     wentDown = 0;
   }
+
+  // Draw positions on rl[l.LEFT_ELBOW] and rl[l.RIGHT_ELBOW]
+  canvasCtx.fillStyle = "#8888FF";
+  canvasCtx.font = "40px Arial";
+  canvasCtx.fillText(rl[l.LEFT_ELBOW].x.toFixed(2) + ", " + rl[l.LEFT_ELBOW].y.toFixed(2), cl[l.LEFT_ELBOW].x * canvasElement.width, cl[l.LEFT_ELBOW].y * canvasElement.height);
+
+  canvasCtx.fillStyle = "#8888FF";
+  canvasCtx.font = "40px Arial";
+  canvasCtx.fillText(rl[l.RIGHT_ELBOW].x.toFixed(2) + ", " + rl[l.RIGHT_ELBOW].y.toFixed(2), cl[l.RIGHT_ELBOW].x * canvasElement.width, cl[l.RIGHT_ELBOW].y * canvasElement.height);
+
+  // Set player flap speed to the difference between the distances current and last frame
+  window.playerFlapSpeed = Math.abs(dist_left - lastDistLeft) + Math.abs(dist_right - lastDistRight);
+  console.log({
+    dist_left,
+    dist_right,
+    lastDistLeft,
+    lastDistRight,
+    windowPlayerFlapSpeed: window.playerFlapSpeed,
+    diffLeft: Math.abs(dist_left - lastDistLeft),
+    diffRight: Math.abs(dist_right - lastDistRight),
+    diff: Math.abs(dist_left - lastDistLeft) + Math.abs(dist_right - lastDistRight),
+  })
+  console.log("Flap speed: " + window.playerFlapSpeed.toFixed(2));
+
+  lastDistLeft = dist_left;
+  lastDistRight = dist_right;
 }
 
 const pose = new Pose({
@@ -99,7 +127,7 @@ const pose = new Pose({
   }
 });
 pose.setOptions({
-  modelComplexity: 1,
+  modelComplexity: 0,
   smoothLandmarks: true,
   enableSegmentation: false,
   smoothSegmentation: false,
