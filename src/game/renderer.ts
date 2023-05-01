@@ -3,42 +3,39 @@ import * as PIXI from 'pixi.js';
 // App settings
 const appWidth = 1240
 const appHeight = 360
-PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
-
-
-let app = new PIXI.Application({ width: appWidth, height: appHeight });
-document.body.appendChild(app.view as HTMLCanvasElement);
-
-let bird = PIXI.Sprite.from("sprites/bird.png");
-bird.width = 17 * 3
-bird.height = 12 * 3
-app.stage.addChild(bird);
 
 // Starting settings
-let birdStartx = appWidth * 0.25
-let birdStarty = appHeight * 0.25
+const birdStartx = appWidth * 0.25
+const birdStarty = appHeight * 0.25
 const flapMultiplier = 1.5  
 
-bird.x = birdStartx
-bird.y = birdStarty
-bird.zIndex = 100000000000000
+// Pillar settings
+const size = 3
+const passageSize = 200
+const pillarCreationDelay = 6
 
-let elapsed = 0.0;
-let momentum = 0.0;
-let reset = true
-let lastFlap = 0
-
-let curZIndex = 0
-
+// Comment this to disable spacebar
 const spacebar = keyboard(" ")
 spacebar.press = () => {
   momentum = 2
 }
-let boost = false
-let pillars: PIXI.Sprite[] = []
-let passedPillars : Array<number> = []
-let background: PIXI.Sprite[] = []
 
+// END OF SETTINGS
+// Logic
+let app = new PIXI.Application({ width: appWidth, height: appHeight });
+document.body.appendChild(app.view as HTMLCanvasElement);
+PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+
+// Bird creation
+let bird = PIXI.Sprite.from("sprites/bird.png");
+bird.width = 17 * 3
+bird.height = 12 * 3
+app.stage.addChild(bird);
+bird.x = birdStartx
+bird.y = birdStarty
+bird.zIndex = 100000000000000 // Dont look at this number
+
+// Score text creation
 let scoreText = new PIXI.Text("0")
 scoreText.style = new PIXI.TextStyle({fill:0xFFFFFF})
 app.stage.addChild(scoreText)
@@ -47,54 +44,51 @@ scoreText.y = 0
 scoreText.zIndex = 1000000000000
 let score = 0
 
+// Bird logic
+let lastFlap = 0
+let momentum = 0.0;
+let boost = false
+
+// Game loop logic
+let elapsed = 0.0;
+let reset = true
+let curZIndex = 0
+let pillars: PIXI.Sprite[] = []
+let passedPillars : Array<number> = []
+let background: PIXI.Sprite[] = []
 let lastPillarCreated = 0
-let pillarCreationDelay = 6
-// Tell our application's ticker to run a new callback every frame, passing
-// in the amount of time that has passed since the last tick
+
+// MAIN LOOP
 app.ticker.add((delta) => {
   elapsed += delta;
-  let elapsedSecs = elapsed / 50
+  let elapsedSecs = elapsed / 50 // Nifty little variable
 
+  // Reset game logic
   if (reset){
-    bird.x, bird.y = birdStartx, appHeight * 0.25
+    // Reset variables
+    bird.x, bird.y = birdStartx, birdStarty
     bird.rotation = 0
     elapsed = 0
     window.playerFlaps = 0
-    console.log("Reset")
     boost = true
+    lastPillarCreated = 0
+    reset = false
+
+    // Deletes pillars
     for (const pillar of pillars){
       pillar.destroy()
     }
     pillars = []
-    for (const tile of background){
-      tile.destroy()
-    }
-    background = []
-    lastPillarCreated = 0
-    reset = false
-    
-    for (let i = 0; i < 10; i++){
-      let tile = PIXI.Sprite.from("Background/Background1.png")
-      tile.width = tile.width * 1.41
-      tile.height = tile.height * 1.41
-      if (i == 0){
-        console.log("Created tile")
-        tile.x = -500
-      }
-      else{
-        tile.x = background[background.length - 1].x + tile.width
-      }
-      app.stage.addChild(tile)
-      background.push(tile)
-    }
   }
-  else if (window.playerFlaps > 0){  // Creates new pillars 
+  // Checks if the player has flapped to start the game
+  else if (window.playerFlaps > 0){
+
+      // Creates new pillars 
     if (elapsedSecs - lastPillarCreated > pillarCreationDelay) {
       createPillars()
       lastPillarCreated = elapsedSecs
     }
-    
-    // Moves pillars
+    // Moves pillars and destroys them if too far
     for (let i = 0; i < pillars.length; i++) {
       pillars[i].x -= 1.5 * delta
       if (pillars[i].x < -200) {
@@ -102,30 +96,21 @@ app.ticker.add((delta) => {
         pillars.splice(i, 1)
       }
     }
-    // Applies score
-    for (let i = 0; i < pillars.length; i++) {
-      if (bird.x > (pillars[i].x + pillars[i].width) && !(passedPillars.includes(pillars[i].zIndex))){
-        passedPillars.push(pillars[i].zIndex)
-        score += 5
-        console.log("new score")
-      }
-    }
-      
+
     // Applies flaps
     if (window.playerFlaps > lastFlap){
       momentum = (1 / window.playerFlapSpeed) * flapMultiplier
       lastFlap = window.playerFlaps
     }
-    
-    // Moves bird
+    // Moves bird and rotates it
     momentum -= 0.05 * delta;
     bird.y -= momentum;
     bird.rotation = -(momentum / 5)
-
-    // Kills bird if outside borders
+    // Kills bird if goes too much down
     if (bird.y > appHeight && !reset) {
       reset = true
     }
+    // Logic so that the bird can go up
     for (const pillar of pillars){
       if ((bird.x + bird.width > pillar.x && bird.x < pillar.x + pillar.width) && !reset && bird.y < -30){
         reset = true
@@ -138,7 +123,7 @@ app.ticker.add((delta) => {
       }
     }
 
-    // Background
+    // Deletes bacjgiund tiles
     for (let i = 0; i < background.length; i++) {
       background[i].x -= 0.5 * delta
       if (background[i].x < -400) {
@@ -146,6 +131,16 @@ app.ticker.add((delta) => {
         background.splice(i, 1)
       }
     }
+    // Creates first background tile
+    if (background.length == 0){
+      let tile = PIXI.Sprite.from("Background/Background1.png")
+      tile.width = tile.width * 1.41
+      tile.height = tile.height * 1.41
+      tile.x = - tile.width
+      app.stage.addChild(tile)
+      background.push(tile)
+    }
+    // Deletes background out of range
     if (background[background.length - 1].x < appWidth + 100){
       let tile = PIXI.Sprite.from("Background/Background1.png")
       tile.width = tile.width * 1.41
@@ -154,14 +149,21 @@ app.ticker.add((delta) => {
       app.stage.addChild(tile)
       background.push(tile)
     }
-
-    // Sorts all sprites
+    // Applies score
+    for (let i = 0; i < pillars.length; i++) {
+      if (bird.x > (pillars[i].x + pillars[i].width) && !(passedPillars.includes(pillars[i].zIndex))){
+        passedPillars.push(pillars[i].zIndex)
+        score += 5 // Beautiful way of knowing if the pillar is passed BTW
+      }
+    }
+    // End of loop logic
     scoreText.text = score
     app.stage.sortChildren()
   }
   else{
-    momentum = 0
+    momentum = 0 // Pauses the game
   }
+  // Boosts first flap
   if (boost && window.playerFlaps > 0){
     boost = false
     momentum = flapMultiplier * 2
@@ -223,9 +225,7 @@ function keyboard(value: string): Key {
 }
 
 function createPillars() {
-  let size = 3
-  let passageSize = 200
-  let middleY = 100 + (Math.random() * (appHeight - 200))
+  const middleY = 100 + (Math.random() * (appHeight - 200))
 
   //Top pillar creation
   let newPillarTop = PIXI.Sprite.from("sprites/pillar.png")
@@ -233,7 +233,7 @@ function createPillars() {
   newPillarTop.height = 78 * size
   newPillarTop.x = appWidth + 200;
   newPillarTop.y = middleY - (78 * size) - passageSize / 2;
-  newPillarTop.zIndex = curZIndex
+  newPillarTop.zIndex = curZIndex // This is for the pillar passing logic
 
   //Bottom pillar creation
   let newPillarBottom = PIXI.Sprite.from("sprites/pillar.png")
@@ -246,7 +246,6 @@ function createPillars() {
   //Adding all sprites
   app.stage.addChild(newPillarTop)
   app.stage.addChild(newPillarBottom);
-
   pillars.push(newPillarTop)
   pillars.push(newPillarBottom)
 
