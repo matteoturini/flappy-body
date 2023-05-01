@@ -7,7 +7,7 @@ const appHeight = 360
 // Starting settings
 const birdStartx = appWidth * 0.25
 const birdStarty = appHeight * 0.25
-const flapMultiplier = 10
+const flapMultiplier = 15
 
 // Pillar settings
 const size = 3
@@ -172,8 +172,9 @@ app.ticker.add((delta) => {
   // Boosts first flap
   if (boost && window.playerFlaps > 0) {
     boost = false
-    momentum = flapMultiplier * 2
+    momentum = flapMultiplier / 2
     window.playerFlaps = 1
+    lastFlap = 1
   }
 });
 

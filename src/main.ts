@@ -1,6 +1,9 @@
 import { drawLandmarks, drawConnectors } from '@mediapipe/drawing_utils'
 import { NormalizedLandmark, Pose, POSE_CONNECTIONS, POSE_LANDMARKS, Results } from '@mediapipe/pose'
 import { Camera } from '@mediapipe/camera_utils'
+import './index.css'
+
+console.log("%cAppuyez sur Espace pour activer le mode debug.", "background: #222; color: #bada55; font-size: 20px;");
 
 declare global {
   interface Window {
@@ -13,9 +16,8 @@ window.playerFlapSpeed = 0;
 window.playerFlaps = 0;
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = /*html*/ `
-  <video class="input_video"></video>
-  <canvas class="output_canvas" width="1280px" height="720px"></canvas>
-  <div class="landmark-grid-container"></div>
+  <video class="input_video" style="display: none;"></video>
+  <canvas style="display: none;" class="output_canvas" width="1280px" height="720px"></canvas>
 `
 
 const videoElement: HTMLVideoElement = document.querySelector('video')!;
@@ -25,11 +27,14 @@ const canvasCtx = canvasElement.getContext('2d')!;
 let wentDown = 0;
 let wentUp = 0;
 
-let opened_distance = .6;
-let closed_distance = .4;
+let opened_distance = .55;
+let closed_distance = .45;
 
 let lastDistLeft = 0;
 let lastDistRight = 0;
+
+let nframes = 0;
+let fps = 0;
 
 function distance3d(p1: NormalizedLandmark, p2: NormalizedLandmark) {
   // Distance between two 3d points
@@ -81,6 +86,7 @@ function onResults(results: Results) {
   canvasCtx.fillText("Right: " + dist_right.toFixed(2), 10, 100);
   canvasCtx.fillText("Flap: " + window.playerFlaps, 10, 150);
   canvasCtx.fillText("Flap Speed: " + window.playerFlapSpeed.toFixed(2), 10, 200);
+  canvasCtx.fillText("FPS: " + fps.toFixed(2), 10, 250);
 
   if (dist_left > opened_distance && dist_right > opened_distance) {
     wentUp = Date.now();
@@ -105,26 +111,29 @@ function onResults(results: Results) {
 
   // Set player flap speed to the difference between the distances current and last frame
   window.playerFlapSpeed = Math.abs(dist_left - lastDistLeft) + Math.abs(dist_right - lastDistRight);
-  console.log({
-    dist_left,
-    dist_right,
-    lastDistLeft,
-    lastDistRight,
-    windowPlayerFlapSpeed: window.playerFlapSpeed,
-    diffLeft: Math.abs(dist_left - lastDistLeft),
-    diffRight: Math.abs(dist_right - lastDistRight),
-    diff: Math.abs(dist_left - lastDistLeft) + Math.abs(dist_right - lastDistRight),
-  })
-  console.log("Flap speed: " + window.playerFlapSpeed.toFixed(2));
+  // console.log({
+  //   dist_left,
+  //   dist_right,
+  //   lastDistLeft,
+  //   lastDistRight,
+  //   windowPlayerFlapSpeed: window.playerFlapSpeed,
+  //   diffLeft: Math.abs(dist_left - lastDistLeft),
+  //   diffRight: Math.abs(dist_right - lastDistRight),
+  //   diff: Math.abs(dist_left - lastDistLeft) + Math.abs(dist_right - lastDistRight),
+  // })
+  // console.log("Flap speed: " + window.playerFlapSpeed.toFixed(2));
 
   lastDistLeft = dist_left;
   lastDistRight = dist_right;
+
+  nframes++;
 }
 
 const pose = new Pose({
   locateFile: (file) => {
     return `/mediapipe/${file}`;
-  }
+  },
+  
 });
 pose.setOptions({
   modelComplexity: 0,
@@ -146,3 +155,14 @@ setTimeout(() => {
   });
   camera.start();
 }, 300);
+
+window.addEventListener('keydown', (e) => {
+  if (e.key == ' ') {
+    canvasElement.style.display = '';
+  }
+});
+
+setInterval(() => {
+  fps = nframes * 2;
+  nframes = 0;
+}, 500);
