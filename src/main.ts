@@ -131,7 +131,7 @@ function onResults(results: Results) {
 
 const pose = new Pose({
   locateFile: (file) => {
-    return `/mediapipe/${file}`;
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;	
   },
   
 });
