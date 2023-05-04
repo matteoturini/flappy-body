@@ -21,49 +21,67 @@ spacebar.press = () => {
 }
 
 // END OF SETTINGS
-// Logic
+// Initialization of PIXI
 let app = new PIXI.Application({ width: appWidth, height: appHeight });
 document.body.appendChild(app.view as HTMLCanvasElement);
+
+// Disable antialiasing for our pixel art
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
 // Bird creation
 let bird = PIXI.Sprite.from("sprites/bird.png");
 bird.width = 17 * 3
 bird.height = 12 * 3
+// Add bird to the stage (scene)
 app.stage.addChild(bird);
 bird.x = birdStartx
 bird.y = birdStarty
-bird.zIndex = 100000000000000 // Dont look at this number
+bird.zIndex = Number.MAX_SAFE_INTEGER - 1 // Makes the bird appear on top of everything, but not the score
 
 // Score text creation
 let scoreText = new PIXI.Text("0")
+// White text
 scoreText.style = new PIXI.TextStyle({ fill: 0xFFFFFF })
+// Add score text to the stage
 app.stage.addChild(scoreText)
 scoreText.x = appWidth - 50
 scoreText.y = 0
-scoreText.zIndex = 1000000000000
+scoreText.zIndex = Number.MAX_SAFE_INTEGER // Makes the score appear on top of everything
 let score = 0
 
 // Bird logic
+// Last index of the flap performed
+// Important because flaps are counted incrementally
 let lastFlap = 0
+// Bird speed/momentum
 let momentum = 0.0;
+// First flap is boosted to make for easier gameplay
 let boost = false
 
-// Game loop logic
+// Elapsed time since the start of the game
+// In milliseconds
 let elapsed = 0.0;
+// Whether the game is reset or not
 let reset = true
+// Strategy to count the pillars based on zIndex value
 let curZIndex = 0
+
+// List of pillars
 let pillars: PIXI.Sprite[] = []
-let passedPillars: Array<number> = []
+// List of pillars that have been passed
+let passedPillars: number[] = []
+// Background
 let background: PIXI.Sprite[] = []
+// When the last pillar was created
 let lastPillarCreated = 0
 
 // MAIN LOOP
 app.ticker.add((delta) => {
+  // Δt in 2ms (#!%$ &!@ *@!#?!?!?!?!?)
   elapsed += delta;
-  let elapsedSecs = elapsed / 50 // Nifty little variable
+  let elapsedSecs = elapsed / 50
 
-  // Reset game logic
+  // Reset game state
   if (reset) {
     // Reset variables
     bird.x, bird.y = birdStartx, birdStarty
@@ -106,30 +124,32 @@ app.ticker.add((delta) => {
     momentum -= 0.05 * delta;
     bird.y -= momentum;
     bird.rotation = -(momentum / 5)
-    // Kills bird if goes too much down
+    // Kills bird if goes too far down
     if (bird.y > appHeight && !reset) {
       reset = true
     }
 
+    // Limit height, and stop momentum when hitting the ceiling
     if (bird.y < -1) {
       bird.y = -1
       momentum = 0
     }
 
-    // Logic so that the bird can go up
+    // Check collision
     for (const pillar of pillars) {
       if ((bird.x + bird.width > pillar.x && bird.x < pillar.x + pillar.width) && !reset && bird.y < -30) {
         reset = true
       }
     }
+
     // Kills bird when touching pillars
-    for (let i = 0; i < pillars.length; i++) {
-      if (colliding(bird, pillars[i])) {
+    for (const pillar of pillars) {
+      if (colliding(bird, pillar)) {
         reset = true
       }
     }
 
-    // Deletes bacjgiund tiles
+    // Deletes background tiles
     for (let i = 0; i < background.length; i++) {
       background[i].x -= 0.5 * delta
       if (background[i].x < -400) {
@@ -162,7 +182,7 @@ app.ticker.add((delta) => {
         score += 5 // Beautiful way of knowing if the pillar is passed BTW
       }
     }
-    // End of loop logic
+    // End of loop
     scoreText.text = score
     app.stage.sortChildren()
   }
@@ -188,7 +208,7 @@ interface Key {
   upHandler: (event: KeyboardEvent) => void;
   unsubscribe: () => void;
 }
-
+// Technically a class, but I got lazy
 function keyboard(value: string): Key {
   const key: Key = {
     value,
@@ -221,7 +241,7 @@ function keyboard(value: string): Key {
       window.removeEventListener("keyup", upListener);
     }
   };
-  //Attach event listeners
+  // Attach event listeners
   const downListener = key.downHandler.bind(key);
   const upListener = key.upHandler.bind(key);
 
@@ -234,7 +254,7 @@ function keyboard(value: string): Key {
 function createPillars() {
   const middleY = 100 + (Math.random() * (appHeight - 200))
 
-  //Top pillar creation
+  // Top pillar creation
   let newPillarTop = PIXI.Sprite.from("sprites/pillar.png")
   newPillarTop.width = 32 * size
   newPillarTop.height = 78 * size
@@ -242,7 +262,7 @@ function createPillars() {
   newPillarTop.y = middleY - (78 * size) - passageSize / 2;
   newPillarTop.zIndex = curZIndex // This is for the pillar passing logic
 
-  //Bottom pillar creation
+  // Bottom pillar creation
   let newPillarBottom = PIXI.Sprite.from("sprites/pillar.png")
   newPillarBottom.width = 32 * size
   newPillarBottom.height = 78 * size
@@ -259,6 +279,7 @@ function createPillars() {
   curZIndex += 2
 }
 function colliding(a: PIXI.Sprite, b: PIXI.Sprite) {
+  // Standard AABB algorithm
   return a.x < b.x + b.width &&
     a.x + a.width > b.x &&
     a.y < b.y + b.height &&
